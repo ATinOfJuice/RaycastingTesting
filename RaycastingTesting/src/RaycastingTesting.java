@@ -6,36 +6,74 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import java.awt.Color;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 
 import hsa2.GraphicsConsole;
 
 public class RaycastingTesting{
 
-    public static final int ScreenWidth = 640;
-    public static final int ScreenHeight = 480;
+    public static final int ResolutionWidth = 640;
+    public static final int ResolutionHeight = 480;
+    public static final int ScreenWidth = ResolutionWidth;
+    public static final int ScreenHeight = ResolutionHeight;
     public static final int TextureWidth = 64;
     public static final int TextureHeight = 64;
     public static final int NumTextures = 11;
 
     public static int currentX;
-    public static int[][] drawStartEnd = new int[ScreenWidth][2];
-    public static Color[] color = new Color[ScreenWidth];
+    public static int[][] drawStartEnd = new int[ResolutionWidth][2];
+    public static Color[] color = new Color[ResolutionWidth];
     public static double yVelocity = 0;
     public static int height = 0; 
-    public static boolean jumped = false;
 
     public static GraphicsConsole gc = new GraphicsConsole(ScreenWidth, ScreenHeight);
 
     BufferedImage texturePngs[] = new BufferedImage[NumTextures];
     int texture[][] = new int[NumTextures][TextureWidth * TextureHeight];
     int darkerNumber = Integer.parseInt("011111110111111101111111", 2);
-    BufferedImage screen = new BufferedImage(ScreenWidth, ScreenHeight, BufferedImage.TYPE_INT_RGB);
-    
+    BufferedImage screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
+
+    double[] zBuffer = new double[ResolutionWidth];
+
+    public static final int NumSprites = 20;
+    int[] spriteOrder = new int[NumSprites];
+    double[] spriteDistance = new double[NumSprites];
+
+    Sprite[] sprite = {
+        new Sprite(20.5, 11.5, 10), //green light in front of playerstart
+        //green lights in every room
+        new Sprite(18.5,4.5, 10),
+        new Sprite(10.0,4.5, 10),
+        new Sprite(10.0,12.5,10),
+        new Sprite(3.5, 6.5, 10),
+        new Sprite(3.5, 20.5,10),
+        new Sprite(3.5, 14.5,10),
+        new Sprite(14.5,20.5,10),
+
+        //row of pillars in front of wall: fisheye test
+        new Sprite(18.5, 10.5, 9),
+        new Sprite(18.5, 11.5, 9),
+        new Sprite(18.5, 12.5, 9),
+
+        //some barrels around the map
+        new Sprite(21.5, 1.5, 8),
+        new Sprite(15.5, 1.5, 8),
+        new Sprite(16.0, 1.8, 8),
+        new Sprite(16.2, 1.2, 8),
+        new Sprite(3.5,  2.5, 8),
+        new Sprite(9.5, 15.5, 8),
+        new Sprite(10.0, 15.1,8),
+        new Sprite(10.5, 15.8,8),
+
+        //Player Barrel
+        new Sprite(0, 0, 8)
+    };
+
     RaycastingTesting () {
         int mapWidth = 0, mapHeight = 1;
         int[][] map = {};
-        File mapFile = new File("Personal Testing\\src\\map.txt");
+        File mapFile = new File("RaycastingTesting\\src\\map.txt");
 
         gc.setBackgroundColor(Color.BLACK);
 
@@ -59,17 +97,17 @@ public class RaycastingTesting{
             }
             reader.close();
             r.close();
-            texturePngs[0] = ImageIO.read(new File("Personal Testing\\src\\images\\eagle.png"));
-            texturePngs[1] = ImageIO.read(new File("Personal Testing\\src\\images\\redbrick.png"));
-            texturePngs[2] = ImageIO.read(new File("Personal Testing\\src\\images\\purplestone.png"));
-            texturePngs[3] = ImageIO.read(new File("Personal Testing\\src\\images\\greystone.png"));
-            texturePngs[4] = ImageIO.read(new File("Personal Testing\\src\\images\\bluestone.png"));
-            texturePngs[5] = ImageIO.read(new File("Personal Testing\\src\\images\\mossy.png"));
-            texturePngs[6] = ImageIO.read(new File("Personal Testing\\src\\images\\wood.png"));
-            texturePngs[7] = ImageIO.read(new File("Personal Testing\\src\\images\\colorstone.png"));
-            texturePngs[8] = ImageIO.read(new File("Personal Testing\\src\\images\\barrel.png"));
-            texturePngs[9] = ImageIO.read(new File("Personal Testing\\src\\images\\pillar.png"));
-            texturePngs[10] = ImageIO.read(new File("Personal Testing\\src\\images\\greenlight.png"));
+            texturePngs[0] = ImageIO.read(new File("RaycastingTesting\\src\\images\\eagle.png"));
+            texturePngs[1] = ImageIO.read(new File("RaycastingTesting\\src\\images\\redbrick.png"));
+            texturePngs[2] = ImageIO.read(new File("RaycastingTesting\\src\\images\\purplestone.png"));
+            texturePngs[3] = ImageIO.read(new File("RaycastingTesting\\src\\images\\greystone.png"));
+            texturePngs[4] = ImageIO.read(new File("RaycastingTesting\\src\\images\\bluestone.png"));
+            texturePngs[5] = ImageIO.read(new File("RaycastingTesting\\src\\images\\mossy.png"));
+            texturePngs[6] = ImageIO.read(new File("RaycastingTesting\\src\\images\\wood.png"));
+            texturePngs[7] = ImageIO.read(new File("RaycastingTesting\\src\\images\\colorstone.png"));
+            texturePngs[8] = ImageIO.read(new File("RaycastingTesting\\src\\images\\barrel.png"));
+            texturePngs[9] = ImageIO.read(new File("RaycastingTesting\\src\\images\\pillar.png"));
+            texturePngs[10] = ImageIO.read(new File("RaycastingTesting\\src\\images\\greenlight.png"));
 
             for(int i = 0; i < NumTextures; i++){
                 for (int y = 0; y < TextureHeight; y++) {
@@ -85,22 +123,23 @@ public class RaycastingTesting{
 
         Vector pos = new Vector(22, 12);
         Vector dir = new Vector(-1, 0);
+        Vector cameraPos = pos.addVec(dir.scalMult(-1));
         Vector plane = new Vector(0, 0.66);
 
         double time = 0, oldTime = 0;
 
         while (true) {
 
-            for (int x = 0; x < ScreenWidth; x++){
+            for (int x = 0; x < ResolutionWidth; x++){
                 currentX = x;
-                double cameraX = 2 * x / (double) ScreenWidth - 1;
+                double cameraX = 2 * x / (double) ResolutionWidth - 1;
                 Vector rayDir = dir.addVec(plane.scalMult(cameraX));
 
-                VectorInt mapSquare = new VectorInt((int)pos.x, (int)pos.y);
+                VectorInt mapSquare = new VectorInt((int)cameraPos.x, (int)cameraPos.y);
                 Vector sideDist = new Vector();
                 Vector deltaDist = new Vector();
                 double perpWallDist;
-                VectorInt step =  new VectorInt(); //False for left, True for right.
+                VectorInt step =  new VectorInt();
                 int hit = 0;
                 boolean side = false; //NS = true, EW = false;
 
@@ -117,17 +156,17 @@ public class RaycastingTesting{
 
                 if (rayDir.x < 0) {
                     step.x = -1;
-                    sideDist.x = (pos.x - mapSquare.x) * deltaDist.x;
+                    sideDist.x = (cameraPos.x - mapSquare.x) * deltaDist.x;
                 } else {
                     step.x = 1;
-                    sideDist.x = (mapSquare.x + 1.0 - pos.x) * deltaDist.x;
+                    sideDist.x = (mapSquare.x + 1.0 - cameraPos.x) * deltaDist.x;
                 }
                 if (rayDir.y < 0) {
                     step.y = -1;
-                    sideDist.y = (pos.y - mapSquare.y) * deltaDist.y;
+                    sideDist.y = (cameraPos.y - mapSquare.y) * deltaDist.y;
                 } else {
                     step.y = 1;
-                    sideDist.y = (mapSquare.y + 1.0 - pos.y) * deltaDist.y;
+                    sideDist.y = (mapSquare.y + 1.0 - cameraPos.y) * deltaDist.y;
                 }
 
                 while (hit == 0){
@@ -148,18 +187,18 @@ public class RaycastingTesting{
                 //if (!side) perpWallDist = sideDist.x;
                 //else perpWallDist = sideDist.y;
 
-                int lineHeight = (int)(ScreenHeight / perpWallDist);
+                int lineHeight = (int)(ResolutionHeight / perpWallDist);
 
-                drawStartEnd[x][0] = (-lineHeight + ScreenHeight) / 2;
+                drawStartEnd[x][0] = (-lineHeight + ResolutionHeight) / 2;
                 if (drawStartEnd[x][0] < 0) drawStartEnd[x][0] = 0;
-                drawStartEnd[x][1] = (lineHeight + ScreenHeight) / 2;
-                if (drawStartEnd[x][1] >= ScreenHeight) drawStartEnd[x][1] = ScreenHeight - 1;
+                drawStartEnd[x][1] = (lineHeight + ResolutionHeight) / 2;
+                if (drawStartEnd[x][1] >= ResolutionHeight) drawStartEnd[x][1] = ResolutionHeight - 1;
                 
                 int texNum = map[mapSquare.x][mapSquare.y] - 1;
 
                 double wallX;
-                if (!side) wallX = pos.y + perpWallDist * rayDir.y;
-                else wallX = pos.x + perpWallDist * rayDir.x;
+                if (!side) wallX = cameraPos.y + perpWallDist * rayDir.y;
+                else wallX = cameraPos.x + perpWallDist * rayDir.x;
                 wallX -= Math.floor(wallX);
 
                 int texX = (int)(wallX * (double)TextureWidth);
@@ -171,8 +210,8 @@ public class RaycastingTesting{
                 }
 
                 double texStep = (double)TextureHeight / lineHeight;
-                double texPos = (drawStartEnd[x][0] - ScreenHeight/2 + lineHeight/2) * texStep;
-                for (int y = 0; y < ScreenHeight; y++){
+                double texPos = (drawStartEnd[x][0] - ResolutionHeight/2 + lineHeight/2) * texStep;
+                for (int y = 0; y < ResolutionHeight; y++){
                     screen.setRGB(x, y, 0);
                 }
                 for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++){
@@ -182,28 +221,67 @@ public class RaycastingTesting{
                     if (side) color = (color >> 1) & darkerNumber;
                     screen.setRGB(x, y, color);
                 }
+                zBuffer[x] = perpWallDist;
+            }
 
-                /*switch(map[mapSquare.x][mapSquare.y]){
-                    case 1: 
-                        color[x] = Color.RED;
-                        break;
-                    case 2:
-                        color[x] = Color.GREEN;
-                        break;
-                    case 3:
-                        color[x] = Color.BLUE;
-                        break;
-                    case 4:
-                        color[x] = Color.WHITE;
-                        break;
-                    default:
-                        color[x] = Color.YELLOW;
-                        break;
+            sprite[19].setXY(pos);
+
+            for (int i = 0; i < NumSprites; i++){
+                spriteOrder[i] = i;
+                spriteDistance[i] = (Math.pow(cameraPos.x - sprite[i].x,2) + Math.pow(cameraPos.y - sprite[i].y,2));
+            }
+
+            Sprite.sortSprites(spriteOrder, spriteDistance, NumSprites);
+
+            for (int i = 0; i < NumSprites; i++){
+                Vector spriteCamPos = new Vector(sprite[spriteOrder[i]].x - cameraPos.x, sprite[spriteOrder[i]].y - cameraPos.y);
+                //transform sprite with the inverse camera matrix
+                // [ planeX   dirX ] -1                                       [ dirY      -dirX ]
+                // [               ]       =  1/(planeX*dirY-dirX*planeY) *   [                 ]
+                // [ planeY   dirY ]                                          [ -planeY  planeX ]
+                double invDet = 1.0/(plane.x * dir.y - dir.x * plane.y);
+                Vector transform = new Vector(invDet * (dir.y * spriteCamPos.x - dir.x * spriteCamPos.y), invDet * (-plane.y * spriteCamPos.x + plane.x * spriteCamPos.y));
+                int spriteScreenX = (int)((ResolutionWidth/2)*(1 + transform.x/transform.y));
+
+                //calculate height of the sprite on screen
+                int spriteHeight = Math.abs((int)(ResolutionHeight / (transform.y))); //using 'transformY' instead of the real distance prevents fisheye
+                //calculate lowest and highest pixel to fill in current stripe
+                int drawStartY = -spriteHeight / 2 + ResolutionHeight / 2;
+                if(drawStartY < 0) drawStartY = 0;
+                int drawEndY = spriteHeight / 2 + ResolutionHeight / 2;
+                if(drawEndY >= ResolutionHeight) drawEndY = ResolutionHeight - 1;
+
+                //calculate width of the sprite
+                int spriteWidth = Math.abs((int)(ResolutionHeight / (transform.y)));
+                int drawStartX = -spriteWidth / 2 + spriteScreenX;
+                if(drawStartX < 0) drawStartX = 0;
+                int drawEndX = spriteWidth / 2 + spriteScreenX;
+                if(drawEndX >= ResolutionWidth) drawEndX = ResolutionWidth - 1;
+
+                //loop through every vertical stripe of the sprite on screen
+                for(int stripe = drawStartX; stripe < drawEndX; stripe++)
+                {
+                    int texX = (int)(256 * (stripe - (-spriteWidth / 2 + spriteScreenX)) * TextureWidth / spriteWidth) / 256;
+                    //the conditions in the if are:
+                    //1) it's in front of camera plane so you don't see things behind you
+                    //2) it's on the screen (left)
+                    //3) it's on the screen (right)
+                    //4) ZBuffer, with perpendicular distance
+                    if(transform.y > 0 && transform.y < zBuffer[stripe]) {
+                        for(int y = drawStartY; y < drawEndY; y++){ //for every pixel of the current stripe
+                            int d = (y) * 256 - ResolutionHeight * 128 + spriteHeight * 128; //256 and 128 factors to avoid floats
+                            int texY = ((d * TextureHeight) / spriteHeight) / 256;
+                            int color;
+                            try {
+                                color = texture[sprite[spriteOrder[i]].texture][TextureWidth * texY + texX]; //get current color from the texture
+                                if((color & 0x00FFFFFF) != 0) screen.setRGB(stripe, y, color); //paint pixel if it isn't black, black is the invisible color
+                            } catch (Exception e) {
+                                System.out.printf("%d, %d, %d, %d\n", d, y, drawStartY, spriteHeight);
+                            }
+                            
+                        }
+                    }
                 }
-
-                if (side) {
-                    color[x] = color[x].darker();
-                }*/
             }
 
             oldTime = time;
@@ -252,24 +330,8 @@ public class RaycastingTesting{
             if(gc.isKeyDown(69)){
                 plane.y -= 0.01;
             }
-            /*
-            if(gc.isKeyDown(32)){
-                if (!jumped){
-                    jumped = true;
-                    yVelocity += 5;
-                }
-            } else {
-                jumped = false;
-            }
-            if (height < 0){
-                height = 0;
-                yVelocity = 0;
-            } else {
-                height += yVelocity;
-            }
-            yVelocity -= 0.3;
-            height += (int)(yVelocity);
-            */
+
+            cameraPos = pos.addVec(dir.scalMult(-1.9));
         }
     }
 
@@ -280,11 +342,7 @@ public class RaycastingTesting{
     void drawGraphics(){
         synchronized(gc){
             gc.clear();
-            /*for (int i = 0; i < ScreenWidth; i++){
-                gc.setColor(color[i]);
-                gc.drawLine(i, drawStartEnd[i][0] + height, i, drawStartEnd[i][1] + height);
-            }*/
-            gc.drawImage(screen, 0, 0);
+            gc.drawImage(screen.getScaledInstance(ScreenWidth, ScreenHeight, Image.SCALE_FAST), 0, 0);
         }
     }
 }

@@ -73,7 +73,7 @@ public class RaycastingTesting{
     RaycastingTesting () {
         int mapWidth = 0, mapHeight = 1;
         int[][] map = {};
-        File mapFile = new File("RaycastingTesting\\src\\map.txt");
+        File mapFile = new File("src\\map.txt");
 
         gc.setBackgroundColor(Color.BLACK);
 
@@ -97,17 +97,17 @@ public class RaycastingTesting{
             }
             reader.close();
             r.close();
-            texturePngs[0] = ImageIO.read(new File("RaycastingTesting\\src\\images\\eagle.png"));
-            texturePngs[1] = ImageIO.read(new File("RaycastingTesting\\src\\images\\redbrick.png"));
-            texturePngs[2] = ImageIO.read(new File("RaycastingTesting\\src\\images\\purplestone.png"));
-            texturePngs[3] = ImageIO.read(new File("RaycastingTesting\\src\\images\\greystone.png"));
-            texturePngs[4] = ImageIO.read(new File("RaycastingTesting\\src\\images\\bluestone.png"));
-            texturePngs[5] = ImageIO.read(new File("RaycastingTesting\\src\\images\\mossy.png"));
-            texturePngs[6] = ImageIO.read(new File("RaycastingTesting\\src\\images\\wood.png"));
-            texturePngs[7] = ImageIO.read(new File("RaycastingTesting\\src\\images\\colorstone.png"));
-            texturePngs[8] = ImageIO.read(new File("RaycastingTesting\\src\\images\\barrel.png"));
-            texturePngs[9] = ImageIO.read(new File("RaycastingTesting\\src\\images\\pillar.png"));
-            texturePngs[10] = ImageIO.read(new File("RaycastingTesting\\src\\images\\greenlight.png"));
+            texturePngs[0] = ImageIO.read(new File("src\\images\\eagle.png"));
+            texturePngs[1] = ImageIO.read(new File("src\\images\\redbrick.png"));
+            texturePngs[2] = ImageIO.read(new File("src\\images\\purplestone.png"));
+            texturePngs[3] = ImageIO.read(new File("src\\images\\greystone.png"));
+            texturePngs[4] = ImageIO.read(new File("src\\images\\bluestone.png"));
+            texturePngs[5] = ImageIO.read(new File("src\\images\\mossy.png"));
+            texturePngs[6] = ImageIO.read(new File("src\\images\\wood.png"));
+            texturePngs[7] = ImageIO.read(new File("src\\images\\colorstone.png"));
+            texturePngs[8] = ImageIO.read(new File("src\\images\\barrel.png"));
+            texturePngs[9] = ImageIO.read(new File("src\\images\\pillar.png"));
+            texturePngs[10] = ImageIO.read(new File("src\\images\\greenlight.png"));
 
             for(int i = 0; i < NumTextures; i++){
                 for (int y = 0; y < TextureHeight; y++) {

@@ -498,10 +498,8 @@ public class RaycastingTesting{
                 if (sideDist.y - 1.1> 2) cameraPos = pos.addVec(cameraDir.scalMult(2));
                 else cameraPos = pos.addVec(cameraDir.scalMult(sideDist.y - 1.1));
             }
-            System.out.println(cameraPos.x + ", " + cameraPos.y);
-            System.out.println(sideDist.x + ", " + sideDist.y);
-            System.out.println(deltaDist.x + ", " + deltaDist.y);
-            
+
+            // cameraPos = pos.addVec(cameraDir.scalMult(1.9));
         }
     }
 

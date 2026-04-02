@@ -21,7 +21,6 @@ public class RaycastingTesting{
     public static final int TextureHeight = 64;
     public static final int NumTextures = 11;
 
-    public static int currentX;
     public static int[][] drawStartEnd = new int[ResolutionWidth][2];
     public static Color[] color = new Color[ResolutionWidth];
     public static double yVelocity = 0;
@@ -32,7 +31,7 @@ public class RaycastingTesting{
     BufferedImage texturePngs[] = new BufferedImage[NumTextures];
     int texture[][] = new int[NumTextures][TextureWidth * TextureHeight];
     int darkerNumber = Integer.parseInt("011111110111111101111111", 2);
-    BufferedImage screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
+    BufferedImage screen;
 
     double[] zBuffer = new double[ResolutionWidth];
 
@@ -69,6 +68,117 @@ public class RaycastingTesting{
         //Player Barrel
         new Sprite(0, 0, 8)
     };
+
+    // class RenderTask extends Thread {
+    //     private int x;
+    //     private Vector dir, plane, cameraPos;
+    //     private int[][] map;
+
+    //     RenderTask(int x, Vector dir, Vector plane, Vector cameraPos, int[][] map) {
+    //         this.x = x;
+    //         this.dir = dir;
+    //         this.plane = plane;
+    //         this.cameraPos = cameraPos;
+    //         this.map = map;
+    //     }
+
+    //     @Override
+    //     public void run() {
+    //         double cameraX = 2 * x / (double) ResolutionWidth - 1;
+    //         Vector rayDir = dir.addVec(plane.scalMult(cameraX));
+
+    //         VectorInt mapSquare = new VectorInt((int)cameraPos.x, (int)cameraPos.y);
+    //         Vector sideDist = new Vector();
+    //         Vector deltaDist = new Vector();
+    //         double perpWallDist;
+    //         VectorInt step =  new VectorInt();
+    //         int hit = 0;
+    //         boolean side = false; //NS = true, EW = false;
+
+    //         if (rayDir.x == 0){
+    //             deltaDist.x = Double.POSITIVE_INFINITY;
+    //         } else {
+    //             deltaDist.x = Math.abs(1/rayDir.x);
+    //         }
+    //         if (rayDir.y == 0){
+    //             deltaDist.y = Double.POSITIVE_INFINITY;
+    //         } else {
+    //             deltaDist.y = Math.abs(1/rayDir.y);
+    //         }
+
+    //         if (rayDir.x < 0) {
+    //             step.x = -1;
+    //             sideDist.x = (cameraPos.x - mapSquare.x) * deltaDist.x;
+    //         } else {
+    //             step.x = 1;
+    //             sideDist.x = (mapSquare.x + 1.0 - cameraPos.x) * deltaDist.x;
+    //         }
+    //         if (rayDir.y < 0) {
+    //             step.y = -1;
+    //             sideDist.y = (cameraPos.y - mapSquare.y) * deltaDist.y;
+    //         } else {
+    //             step.y = 1;
+    //             sideDist.y = (mapSquare.y + 1.0 - cameraPos.y) * deltaDist.y;
+    //         }
+
+    //         while (hit == 0){
+    //             if (sideDist.x < sideDist.y) {
+    //                 sideDist.x += deltaDist.x;
+    //                 mapSquare.x += step.x;
+    //                 side = false;
+    //             } else {
+    //                 sideDist.y += deltaDist.y;
+    //                 mapSquare.y += step.y;
+    //                 side = true;
+    //             }
+    //             if (map[mapSquare.x][mapSquare.y] > 0) hit = 1;
+    //         }
+
+    //         if (!side) perpWallDist = sideDist.x - deltaDist.x;
+    //         else perpWallDist = sideDist.y - deltaDist.y;
+    //         //if (!side) perpWallDist = sideDist.x;
+    //         //else perpWallDist = sideDist.y;
+
+    //         int lineHeight = (int)(ResolutionHeight / perpWallDist);
+
+    //         drawStartEnd[x][0] = (-lineHeight + ResolutionHeight) / 2;
+    //         if (drawStartEnd[x][0] < 0) drawStartEnd[x][0] = 0;
+    //         drawStartEnd[x][1] = (lineHeight + ResolutionHeight) / 2;
+    //         if (drawStartEnd[x][1] >= ResolutionHeight) drawStartEnd[x][1] = ResolutionHeight - 1;
+            
+    //         int texNum = map[mapSquare.x][mapSquare.y] - 1;
+
+    //         double wallX;
+    //         if (!side) wallX = cameraPos.y + perpWallDist * rayDir.y;
+    //         else wallX = cameraPos.x + perpWallDist * rayDir.x;
+    //         wallX -= Math.floor(wallX);
+
+    //         int texX = (int)(wallX * (double)TextureWidth);
+    //         if (!side && rayDir.x > 0) {
+    //             texX = TextureWidth - texX - 1;
+    //         } 
+    //         if (side && rayDir.y < 0) {
+    //             texX = TextureWidth - texX - 1;
+    //         }
+
+    //         double texStep = (double)TextureHeight / lineHeight;
+    //         double texPos = (drawStartEnd[x][0] - ResolutionHeight/2 + lineHeight/2) * texStep;
+    //         /*
+    //         for (int y = 0; y < ResolutionHeight; y++){
+    //             screen.setRGB(x, y, 0);
+    //         }
+    //         */
+            
+    //         for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++){
+    //             int texY = (int)texPos & (TextureHeight - 1);
+    //             texPos += texStep;
+    //             int color = texture[texNum][TextureHeight * texY + texX];
+    //             if (side) color = (color >> 1) & darkerNumber;
+    //             screen.setRGB(x, y, color);
+    //         }
+    //         zBuffer[x] = perpWallDist;
+    //     }
+    // }
 
     RaycastingTesting () {
         int mapWidth = 0, mapHeight = 1;
@@ -123,15 +233,16 @@ public class RaycastingTesting{
 
         Vector pos = new Vector(22, 12);
         Vector dir = new Vector(-1, 0);
-        Vector cameraPos = pos.addVec(dir.scalMult(-1));
+        Vector cameraPos = pos;
         Vector plane = new Vector(0, 0.66);
 
-        double time = 0, oldTime = 0;
+        double time = 0, oldTime = 0, startTime = System.currentTimeMillis(), numSeconds = 0, numFrames = 0;
 
         while (true) {
 
+            screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
+
             for (int x = 0; x < ResolutionWidth; x++){
-                currentX = x;
                 double cameraX = 2 * x / (double) ResolutionWidth - 1;
                 Vector rayDir = dir.addVec(plane.scalMult(cameraX));
 
@@ -211,9 +322,7 @@ public class RaycastingTesting{
 
                 double texStep = (double)TextureHeight / lineHeight;
                 double texPos = (drawStartEnd[x][0] - ResolutionHeight/2 + lineHeight/2) * texStep;
-                for (int y = 0; y < ResolutionHeight; y++){
-                    screen.setRGB(x, y, 0);
-                }
+                
                 for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++){
                     int texY = (int)texPos & (TextureHeight - 1);
                     texPos += texStep;
@@ -244,7 +353,7 @@ public class RaycastingTesting{
                 int spriteScreenX = (int)((ResolutionWidth/2)*(1 + transform.x/transform.y));
 
                 //calculate height of the sprite on screen
-                int spriteHeight = Math.abs((int)(ResolutionHeight / (transform.y))); //using 'transformY' instead of the real distance prevents fisheye
+                int spriteHeight = Math.abs((int)(ResolutionHeight / transform.y)); //using 'transformY' instead of the real distance prevents fisheye
                 //calculate lowest and highest pixel to fill in current stripe
                 int drawStartY = -spriteHeight / 2 + ResolutionHeight / 2;
                 if(drawStartY < 0) drawStartY = 0;
@@ -252,7 +361,7 @@ public class RaycastingTesting{
                 if(drawEndY >= ResolutionHeight) drawEndY = ResolutionHeight - 1;
 
                 //calculate width of the sprite
-                int spriteWidth = Math.abs((int)(ResolutionHeight / (transform.y)));
+                int spriteWidth = Math.abs((int)(ResolutionHeight / transform.y));
                 int drawStartX = -spriteWidth / 2 + spriteScreenX;
                 if(drawStartX < 0) drawStartX = 0;
                 int drawEndX = spriteWidth / 2 + spriteScreenX;
@@ -270,14 +379,15 @@ public class RaycastingTesting{
                     if(transform.y > 0 && transform.y < zBuffer[stripe]) {
                         for(int y = drawStartY; y < drawEndY; y++){ //for every pixel of the current stripe
                             int d = (y) * 256 - ResolutionHeight * 128 + spriteHeight * 128; //256 and 128 factors to avoid floats
-                            int texY = ((d * TextureHeight) / spriteHeight) / 256;
+                            int texY = (int)((((long) d * TextureHeight) / spriteHeight) / 256);
                             int color;
-                            try {
-                                color = texture[sprite[spriteOrder[i]].texture][TextureWidth * texY + texX]; //get current color from the texture
-                                if((color & 0x00FFFFFF) != 0) screen.setRGB(stripe, y, color); //paint pixel if it isn't black, black is the invisible color
-                            } catch (Exception e) {
-                                System.out.printf("%d, %d, %d, %d\n", d, y, drawStartY, spriteHeight);
-                            }
+                            //try {
+                            color = texture[sprite[spriteOrder[i]].texture][TextureWidth * texY + texX]; //get current color from the texture
+                            if((color & 0x00FFFFFF) != 0) screen.setRGB(stripe, y, color); //paint pixel if it isn't black, black is the invisible color
+                            /*} catch (Exception e) {
+                                System.out.println(e.getMessage());
+                                System.out.printf("%d, %f, %d, %d\n", d, transform.y, drawStartY, spriteHeight);
+                            }*/
                             
                         }
                     }
@@ -287,7 +397,13 @@ public class RaycastingTesting{
             oldTime = time;
             time = System.currentTimeMillis();
             double frameTime = (time - oldTime)/1000;
-            //System.out.println(1.0/frameTime);
+            numFrames++;
+
+            if ((time - startTime)/1000 > numSeconds){
+                System.out.println(numFrames);
+                numFrames = 0;
+                numSeconds++;
+            }
 
             drawGraphics();
 
@@ -331,7 +447,61 @@ public class RaycastingTesting{
                 plane.y -= 0.01;
             }
 
-            cameraPos = pos.addVec(dir.scalMult(-1.9));
+            Vector cameraDir = dir.scalMult(-1);
+
+            VectorInt mapSquare = new VectorInt((int)pos.x, (int)pos.y);
+            Vector sideDist = new Vector();
+            Vector deltaDist = new Vector();
+            VectorInt step =  new VectorInt();
+            int hit = 0;
+
+            if (cameraDir.x == 0){
+                deltaDist.x = Double.POSITIVE_INFINITY;
+            } else {
+                deltaDist.x = Math.abs(Math.sqrt(Math.pow(cameraDir.x, 2) + Math.pow(cameraDir.y, 2))/cameraDir.x);
+            }
+            if (cameraDir.y == 0){
+                deltaDist.y = Double.POSITIVE_INFINITY;
+            } else {
+                deltaDist.y = Math.abs(1/cameraDir.y);
+            }
+
+            if (cameraDir.x < 0) {
+                step.x = -1;
+                sideDist.x = (pos.x - mapSquare.x) * deltaDist.x;
+            } else {
+                step.x = 1;
+                sideDist.x = (mapSquare.x + 1.0 - pos.x) * deltaDist.x;
+            }
+            if (cameraDir.y < 0) {
+                step.y = -1;
+                sideDist.y = (pos.y - mapSquare.y) * deltaDist.y;
+            } else {
+                step.y = 1;
+                sideDist.y = (mapSquare.y + 1.0 - pos.y) * deltaDist.y;
+            }
+
+            while (hit == 0){
+                if (sideDist.x < sideDist.y) {
+                    sideDist.x += deltaDist.x;
+                    mapSquare.x += step.x;
+                } else {
+                    sideDist.y += deltaDist.y;
+                    mapSquare.y += step.y;
+                }
+                if (map[mapSquare.x][mapSquare.y] > 0) hit = 1;
+            }
+            if (sideDist.x < sideDist.y) {
+                if (sideDist.x - 1.1> 2) cameraPos = pos.addVec(cameraDir.scalMult(2));
+                else cameraPos = pos.addVec(cameraDir.scalMult(sideDist.x - 1.1));
+            } else {
+                if (sideDist.y - 1.1> 2) cameraPos = pos.addVec(cameraDir.scalMult(2));
+                else cameraPos = pos.addVec(cameraDir.scalMult(sideDist.y - 1.1));
+            }
+            System.out.println(cameraPos.x + ", " + cameraPos.y);
+            System.out.println(sideDist.x + ", " + sideDist.y);
+            System.out.println(deltaDist.x + ", " + deltaDist.y);
+            
         }
     }
 
@@ -340,9 +510,6 @@ public class RaycastingTesting{
     }
 
     void drawGraphics(){
-        synchronized(gc){
-            gc.clear();
-            gc.drawImage(screen.getScaledInstance(ScreenWidth, ScreenHeight, Image.SCALE_FAST), 0, 0);
-        }
+        gc.drawImage(screen.getScaledInstance(ScreenWidth, ScreenHeight, Image.SCALE_FAST), 0, 0);
     }
 }

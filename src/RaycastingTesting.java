@@ -126,6 +126,7 @@ public class RaycastingTesting{
         Vector plane = new Vector(0, 0.66);
 
         double time = 0, oldTime = 0, startTime = System.currentTimeMillis(), numSeconds = 0, numFrames = 0;
+        double rotConst = 3.0;
 
         while (true) {
 
@@ -297,7 +298,7 @@ public class RaycastingTesting{
             drawGraphics();
 
             double moveSpeed = frameTime * 5.0; //the constant value is in squares/second
-            double rotSpeed = frameTime * 3.0; //the constant value is in radians/second
+            double rotSpeed = frameTime * rotConst; //the constant value is in radians/second
             //move forward if no wall in front of you
             if(gc.isKeyDown(87)) {
                 if(map[(int)(pos.x + dir.x * moveSpeed)][(int)pos.y] == 0) pos.x += dir.x * moveSpeed;
@@ -330,10 +331,10 @@ public class RaycastingTesting{
             }
 
             if(gc.isKeyDown(81)){
-                plane.y += 0.01;
+                rotConst = 0.01;
             }
             if(gc.isKeyDown(69)){
-                plane.y -= 0.01;
+                rotConst = 3.0;
             }
 
             Vector cameraDir = dir.scalMult(-1);
@@ -343,6 +344,8 @@ public class RaycastingTesting{
             Vector deltaDist = new Vector();
             VectorInt step =  new VectorInt();
             int hit = 0;
+            double perpWallDist, cameraMult;
+            boolean side = false;
 
             if (cameraDir.x == 0){
                 deltaDist.x = Double.POSITIVE_INFINITY;
@@ -352,7 +355,7 @@ public class RaycastingTesting{
             if (cameraDir.y == 0){
                 deltaDist.y = Double.POSITIVE_INFINITY;
             } else {
-                deltaDist.y = Math.abs(1/cameraDir.y);
+                deltaDist.y = Math.abs(Math.sqrt((cameraDir.x)*(cameraDir.x) + (cameraDir.y)*(cameraDir.y))/cameraDir.y);;
             }
 
             if (cameraDir.x < 0) {
@@ -374,19 +377,23 @@ public class RaycastingTesting{
                 if (sideDist.x < sideDist.y) {
                     sideDist.x += deltaDist.x;
                     mapSquare.x += step.x;
+                    side = true;
                 } else {
                     sideDist.y += deltaDist.y;
                     mapSquare.y += step.y;
+                    side = false;
                 }
                 if (map[mapSquare.x][mapSquare.y] > 0) hit = 1;
             }
-            if (sideDist.x < sideDist.y) {
-                if (sideDist.x - 1.1> 2) cameraPos = pos.addVec(cameraDir.scalMult(2));
-                else cameraPos = pos.addVec(cameraDir.scalMult(sideDist.x - 1.1));
-            } else {
-                if (sideDist.y - 1.1> 2) cameraPos = pos.addVec(cameraDir.scalMult(2));
-                else cameraPos = pos.addVec(cameraDir.scalMult(sideDist.y - 1.1));
-            }
+
+            if(side) perpWallDist = (sideDist.x - deltaDist.x);
+            else perpWallDist = (sideDist.y - deltaDist.y);
+    
+            if (perpWallDist > 1.99) cameraMult = 1.99;
+            else cameraMult = perpWallDist;
+        
+            cameraPos = pos.addVec(cameraDir.scalMult(cameraMult));
+            //System.out.println(side + ", " + cameraMult + " ," + perpWallDist + ", " + sideDist.y);
 
             // cameraPos = pos.addVec(cameraDir.scalMult(1.9));
         }

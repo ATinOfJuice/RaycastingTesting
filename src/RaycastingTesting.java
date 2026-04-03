@@ -226,7 +226,7 @@ public class RaycastingTesting{
 
             for (int i = 0; i < NumSprites; i++){
                 spriteOrder[i] = i;
-                spriteDistance[i] = (Math.pow(cameraPos.x - sprite[i].x,2) + Math.pow(cameraPos.y - sprite[i].y,2));
+                spriteDistance[i] = ((cameraPos.x - sprite[i].x)*(cameraPos.x - sprite[i].x) + (cameraPos.y - sprite[i].y)*(cameraPos.y - sprite[i].y));
             }
 
             Sprite.sortSprites(spriteOrder, spriteDistance, NumSprites);
@@ -347,7 +347,7 @@ public class RaycastingTesting{
             if (cameraDir.x == 0){
                 deltaDist.x = Double.POSITIVE_INFINITY;
             } else {
-                deltaDist.x = Math.abs(Math.sqrt(Math.pow(cameraDir.x, 2) + Math.pow(cameraDir.y, 2))/cameraDir.x);
+                deltaDist.x = Math.abs(Math.sqrt((cameraDir.x)*(cameraDir.x) + (cameraDir.y)*(cameraDir.y))/cameraDir.x);
             }
             if (cameraDir.y == 0){
                 deltaDist.y = Double.POSITIVE_INFINITY;
@@ -397,6 +397,6 @@ public class RaycastingTesting{
     }
 
     void drawGraphics(){
-        gc.drawImage(screen.getScaledInstance(ScreenWidth, ScreenHeight, Image.SCALE_FAST), 0, 0);
+        gc.drawImage(screen, 0, 0);
     }
 }

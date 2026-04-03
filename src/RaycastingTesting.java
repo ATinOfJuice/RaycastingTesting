@@ -69,121 +69,10 @@ public class RaycastingTesting{
         new Sprite(0, 0, 8)
     };
 
-    // class RenderTask extends Thread {
-    //     private int x;
-    //     private Vector dir, plane, cameraPos;
-    //     private int[][] map;
-
-    //     RenderTask(int x, Vector dir, Vector plane, Vector cameraPos, int[][] map) {
-    //         this.x = x;
-    //         this.dir = dir;
-    //         this.plane = plane;
-    //         this.cameraPos = cameraPos;
-    //         this.map = map;
-    //     }
-
-    //     @Override
-    //     public void run() {
-    //         double cameraX = 2 * x / (double) ResolutionWidth - 1;
-    //         Vector rayDir = dir.addVec(plane.scalMult(cameraX));
-
-    //         VectorInt mapSquare = new VectorInt((int)cameraPos.x, (int)cameraPos.y);
-    //         Vector sideDist = new Vector();
-    //         Vector deltaDist = new Vector();
-    //         double perpWallDist;
-    //         VectorInt step =  new VectorInt();
-    //         int hit = 0;
-    //         boolean side = false; //NS = true, EW = false;
-
-    //         if (rayDir.x == 0){
-    //             deltaDist.x = Double.POSITIVE_INFINITY;
-    //         } else {
-    //             deltaDist.x = Math.abs(1/rayDir.x);
-    //         }
-    //         if (rayDir.y == 0){
-    //             deltaDist.y = Double.POSITIVE_INFINITY;
-    //         } else {
-    //             deltaDist.y = Math.abs(1/rayDir.y);
-    //         }
-
-    //         if (rayDir.x < 0) {
-    //             step.x = -1;
-    //             sideDist.x = (cameraPos.x - mapSquare.x) * deltaDist.x;
-    //         } else {
-    //             step.x = 1;
-    //             sideDist.x = (mapSquare.x + 1.0 - cameraPos.x) * deltaDist.x;
-    //         }
-    //         if (rayDir.y < 0) {
-    //             step.y = -1;
-    //             sideDist.y = (cameraPos.y - mapSquare.y) * deltaDist.y;
-    //         } else {
-    //             step.y = 1;
-    //             sideDist.y = (mapSquare.y + 1.0 - cameraPos.y) * deltaDist.y;
-    //         }
-
-    //         while (hit == 0){
-    //             if (sideDist.x < sideDist.y) {
-    //                 sideDist.x += deltaDist.x;
-    //                 mapSquare.x += step.x;
-    //                 side = false;
-    //             } else {
-    //                 sideDist.y += deltaDist.y;
-    //                 mapSquare.y += step.y;
-    //                 side = true;
-    //             }
-    //             if (map[mapSquare.x][mapSquare.y] > 0) hit = 1;
-    //         }
-
-    //         if (!side) perpWallDist = sideDist.x - deltaDist.x;
-    //         else perpWallDist = sideDist.y - deltaDist.y;
-    //         //if (!side) perpWallDist = sideDist.x;
-    //         //else perpWallDist = sideDist.y;
-
-    //         int lineHeight = (int)(ResolutionHeight / perpWallDist);
-
-    //         drawStartEnd[x][0] = (-lineHeight + ResolutionHeight) / 2;
-    //         if (drawStartEnd[x][0] < 0) drawStartEnd[x][0] = 0;
-    //         drawStartEnd[x][1] = (lineHeight + ResolutionHeight) / 2;
-    //         if (drawStartEnd[x][1] >= ResolutionHeight) drawStartEnd[x][1] = ResolutionHeight - 1;
-            
-    //         int texNum = map[mapSquare.x][mapSquare.y] - 1;
-
-    //         double wallX;
-    //         if (!side) wallX = cameraPos.y + perpWallDist * rayDir.y;
-    //         else wallX = cameraPos.x + perpWallDist * rayDir.x;
-    //         wallX -= Math.floor(wallX);
-
-    //         int texX = (int)(wallX * (double)TextureWidth);
-    //         if (!side && rayDir.x > 0) {
-    //             texX = TextureWidth - texX - 1;
-    //         } 
-    //         if (side && rayDir.y < 0) {
-    //             texX = TextureWidth - texX - 1;
-    //         }
-
-    //         double texStep = (double)TextureHeight / lineHeight;
-    //         double texPos = (drawStartEnd[x][0] - ResolutionHeight/2 + lineHeight/2) * texStep;
-    //         /*
-    //         for (int y = 0; y < ResolutionHeight; y++){
-    //             screen.setRGB(x, y, 0);
-    //         }
-    //         */
-            
-    //         for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++){
-    //             int texY = (int)texPos & (TextureHeight - 1);
-    //             texPos += texStep;
-    //             int color = texture[texNum][TextureHeight * texY + texX];
-    //             if (side) color = (color >> 1) & darkerNumber;
-    //             screen.setRGB(x, y, color);
-    //         }
-    //         zBuffer[x] = perpWallDist;
-    //     }
-    // }
-
     RaycastingTesting () {
         int mapWidth = 0, mapHeight = 1;
         int[][] map = {};
-        File mapFile = new File("src\\map.txt");
+        File mapFile = new File("src/map.txt");
 
         gc.setBackgroundColor(Color.BLACK);
 
@@ -207,17 +96,17 @@ public class RaycastingTesting{
             }
             reader.close();
             r.close();
-            texturePngs[0] = ImageIO.read(new File("src\\images\\eagle.png"));
-            texturePngs[1] = ImageIO.read(new File("src\\images\\redbrick.png"));
-            texturePngs[2] = ImageIO.read(new File("src\\images\\purplestone.png"));
-            texturePngs[3] = ImageIO.read(new File("src\\images\\greystone.png"));
-            texturePngs[4] = ImageIO.read(new File("src\\images\\bluestone.png"));
-            texturePngs[5] = ImageIO.read(new File("src\\images\\mossy.png"));
-            texturePngs[6] = ImageIO.read(new File("src\\images\\wood.png"));
-            texturePngs[7] = ImageIO.read(new File("src\\images\\colorstone.png"));
-            texturePngs[8] = ImageIO.read(new File("src\\images\\barrel.png"));
-            texturePngs[9] = ImageIO.read(new File("src\\images\\pillar.png"));
-            texturePngs[10] = ImageIO.read(new File("src\\images\\greenlight.png"));
+            texturePngs[0] = ImageIO.read(new File("src/images/eagle.png"));
+            texturePngs[1] = ImageIO.read(new File("src/images/redbrick.png"));
+            texturePngs[2] = ImageIO.read(new File("src/images/purplestone.png"));
+            texturePngs[3] = ImageIO.read(new File("src/images/greystone.png"));
+            texturePngs[4] = ImageIO.read(new File("src/images/bluestone.png"));
+            texturePngs[5] = ImageIO.read(new File("src/images/mossy.png"));
+            texturePngs[6] = ImageIO.read(new File("src/images/wood.png"));
+            texturePngs[7] = ImageIO.read(new File("src/images/colorstone.png"));
+            texturePngs[8] = ImageIO.read(new File("src/images/barrel.png"));
+            texturePngs[9] = ImageIO.read(new File("src/images/pillar.png"));
+            texturePngs[10] = ImageIO.read(new File("src/images/greenlight.png"));
 
             for(int i = 0; i < NumTextures; i++){
                 for (int y = 0; y < TextureHeight; y++) {

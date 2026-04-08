@@ -6,7 +6,6 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import java.awt.Color;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 
 import hsa2.GraphicsConsole;
@@ -331,10 +330,10 @@ public class RaycastingTesting{
             }
 
             if(gc.isKeyDown(81)){
-                rotConst = 0.01;
+                plane.y += 0.01;
             }
             if(gc.isKeyDown(69)){
-                rotConst = 3.0;
+                plane.y -= 0.01;
             }
 
             Vector cameraDir = dir.scalMult(-1);
@@ -390,7 +389,7 @@ public class RaycastingTesting{
             else perpWallDist = (sideDist.y - deltaDist.y);
     
             if (perpWallDist > 1.99) cameraMult = 1.99;
-            else cameraMult = perpWallDist;
+            else cameraMult = perpWallDist - 0.01;
         
             cameraPos = pos.addVec(cameraDir.scalMult(cameraMult));
             //System.out.println(side + ", " + cameraMult + " ," + perpWallDist + ", " + sideDist.y);

@@ -28,6 +28,7 @@ public class RaycastingTesting{
     public static GraphicsConsole gc = new GraphicsConsole(ScreenWidth, ScreenHeight);
 
     BufferedImage texturePngs[] = new BufferedImage[NumTextures];
+    BufferedImage skyPng;
     int texture[][] = new int[NumTextures][TextureWidth * TextureHeight];
     int darkerNumber = Integer.parseInt("011111110111111101111111", 2);
     BufferedImage screen;
@@ -131,6 +132,33 @@ public class RaycastingTesting{
 
             screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
 
+            for (int y = ResolutionHeight/2; y < ResolutionHeight; y++) {
+                Vector rayDir0 = new Vector(dir.x - plane.x, dir.y - plane.y);
+                Vector rayDir1 = new Vector(dir.x + plane.x, dir.y + plane.y);
+
+                int p = y - ResolutionHeight / 2;
+                double posZ = 0.5 * ResolutionHeight;
+                double rowDistance = posZ / p;
+                
+                Vector floorStep = new Vector(rowDistance * (rayDir1.x - rayDir0.x) / ResolutionWidth, rowDistance * (rayDir1.y - rayDir0.y) / ResolutionWidth);
+                Vector floor = new Vector(cameraPos.x + rowDistance * rayDir0.x, cameraPos.y + rowDistance * rayDir0.y);
+
+                for (int x = 0; x < ResolutionWidth; x++){
+                    VectorInt cell = new VectorInt((int)(floor.x), (int)(floor.y));
+                    VectorInt fcTexture = new VectorInt((int)(TextureWidth * (floor.x - cell.x)) & (TextureWidth - 1), (int)(TextureHeight * (floor.y - cell.y)) & (TextureHeight - 1));
+
+                    floor.x += floorStep.x;
+                    floor.y += floorStep.y;
+
+                    int floorTexture = 3;
+                    int color;
+
+                    color = texture[floorTexture][TextureWidth * fcTexture.y + fcTexture.x];
+                    color = (color >> 1) & darkerNumber;
+                    screen.setRGB(x, y, color);
+                }
+            }
+
             for (int x = 0; x < ResolutionWidth; x++){
                 double cameraX = 2 * x / (double) ResolutionWidth - 1;
                 Vector rayDir = dir.addVec(plane.scalMult(cameraX));
@@ -211,8 +239,8 @@ public class RaycastingTesting{
 
                 double texStep = (double)TextureHeight / lineHeight;
                 double texPos = (drawStartEnd[x][0] - ResolutionHeight/2 + lineHeight/2) * texStep;
-                
-                for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++){
+
+                for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++) {
                     int texY = (int)texPos & (TextureHeight - 1);
                     texPos += texStep;
                     int color = texture[texNum][TextureHeight * texY + texX];
@@ -388,12 +416,12 @@ public class RaycastingTesting{
             if(side) perpWallDist = (sideDist.x - deltaDist.x);
             else perpWallDist = (sideDist.y - deltaDist.y);
     
-            if (perpWallDist > 1.99) cameraMult = 1.99;
+            if (perpWallDist > 2) cameraMult = 2;
             else cameraMult = perpWallDist - 0.01;
         
             cameraPos = pos.addVec(cameraDir.scalMult(cameraMult));
-            //System.out.println(side + ", " + cameraMult + " ," + perpWallDist + ", " + sideDist.y);
-
+            
+            //System.out.printf("%f, %f\n", cameraPos.x, cameraPos.y);
             // cameraPos = pos.addVec(cameraDir.scalMult(1.9));
         }
     }

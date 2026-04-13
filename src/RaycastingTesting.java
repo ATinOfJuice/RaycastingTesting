@@ -12,12 +12,15 @@ import hsa2.GraphicsConsole;
 
 public class RaycastingTesting{
 
+    //Constants
     public static final int ResolutionWidth = 640;
     public static final int ResolutionHeight = 480;
     public static final int ScreenWidth = ResolutionWidth;
     public static final int ScreenHeight = ResolutionHeight;
     public static final int TextureWidth = 64;
     public static final int TextureHeight = 64;
+    public static final int MapTextureWidth = 48;
+    public static final int MapTextureHeight = 48;
     public static final int NumTextures = 11;
 
     public static int[][] drawStartEnd = new int[ResolutionWidth][2];
@@ -28,8 +31,9 @@ public class RaycastingTesting{
     public static GraphicsConsole gc = new GraphicsConsole(ScreenWidth, ScreenHeight);
 
     BufferedImage texturePngs[] = new BufferedImage[NumTextures];
-    BufferedImage skyPng;
-    int texture[][] = new int[NumTextures][TextureWidth * TextureHeight];
+    BufferedImage skyPng, mapPng;
+    int texture[][][] = new int[NumTextures][TextureWidth][TextureHeight];
+    int mapTexture[][] = new int[MapTextureWidth][MapTextureHeight];
     int darkerNumber = Integer.parseInt("011111110111111101111111", 2);
     BufferedImage screen;
 
@@ -87,7 +91,8 @@ public class RaycastingTesting{
             r.close();
             r = new FileReader(mapFile);
             reader = new BufferedReader(r);
-            map = new int[mapWidth][mapHeight];
+            //System.out.printf("%d, %d", mapHeight, mapWidth);
+            map = new int[mapHeight][mapWidth];
             for (int i = 0; i < mapHeight; i++){
                 for (int j = 0; j < mapWidth; j++){
                     map[i][j] = reader.read() - 48;
@@ -107,12 +112,19 @@ public class RaycastingTesting{
             texturePngs[8] = ImageIO.read(new File("src/images/barrel.png"));
             texturePngs[9] = ImageIO.read(new File("src/images/pillar.png"));
             texturePngs[10] = ImageIO.read(new File("src/images/greenlight.png"));
+            skyPng = ImageIO.read(new File("src/images/skyImage.png"));
+            mapPng = ImageIO.read(new File("src/images/MapLong.png"));
 
             for(int i = 0; i < NumTextures; i++){
                 for (int y = 0; y < TextureHeight; y++) {
                     for (int x = 0; x < TextureWidth; x++) {
-                        texture[i][TextureHeight * y + x] = texturePngs[i].getRGB(x,y);
+                        texture[i][x][y] = texturePngs[i].getRGB(x,y);
                     }
+                }
+            }
+            for (int y = 0; y < MapTextureHeight; y++) {
+                for (int x = 0; x < MapTextureWidth; x++) {
+                    mapTexture[MapTextureWidth - x - 1][MapTextureHeight - y - 1] = mapPng.getRGB(x,y);
                 }
             }
             
@@ -120,15 +132,24 @@ public class RaycastingTesting{
             System.out.println("Problem Reading File.");
         }
 
+        //Theoretical Optimal is 3447 px wide lol
+        final int SkyWidth = skyPng.getWidth();
+
         Vector pos = new Vector(22, 12);
         Vector dir = new Vector(-1, 0);
         Vector cameraPos = pos;
-        Vector plane = new Vector(0, 0.66);
+        Vector plane = new Vector(0,0.66);
 
         double time = 0, oldTime = 0, startTime = System.currentTimeMillis(), numSeconds = 0, numFrames = 0;
-        double rotConst = 3.0;
-
+        final double rotConst = 3.0;
+        
+        double skyPixelsPerRevolution = SkyWidth / (2 * Math.PI);
+        double angBetwRays = Math.atan2(plane.y, -dir.x) * 2 / ScreenWidth;
+        double skyStepX = SkyWidth/(2*Math.PI/angBetwRays);
+        
         while (true) {
+
+            double dirAng = Math.atan2(dir.y, dir.x);
 
             screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
 
@@ -145,15 +166,13 @@ public class RaycastingTesting{
 
                 for (int x = 0; x < ResolutionWidth; x++){
                     VectorInt cell = new VectorInt((int)(floor.x), (int)(floor.y));
-                    VectorInt fcTexture = new VectorInt((int)(TextureWidth * (floor.x - cell.x)) & (TextureWidth - 1), (int)(TextureHeight * (floor.y - cell.y)) & (TextureHeight - 1));
+                    VectorInt fcTexture = new VectorInt(Math.abs((int)(MapTextureWidth * (floor.y / mapWidth - cell.y)) % (MapTextureWidth)), Math.abs((int)(MapTextureHeight * (floor.x / mapHeight - cell.x)) % (MapTextureHeight)));
 
                     floor.x += floorStep.x;
                     floor.y += floorStep.y;
 
-                    int floorTexture = 3;
                     int color;
-
-                    color = texture[floorTexture][TextureWidth * fcTexture.y + fcTexture.x];
+                    color = mapTexture[fcTexture.x][fcTexture.y];
                     color = (color >> 1) & darkerNumber;
                     screen.setRGB(x, y, color);
                 }
@@ -216,11 +235,12 @@ public class RaycastingTesting{
                 //else perpWallDist = sideDist.y;
 
                 int lineHeight = (int)(ResolutionHeight / perpWallDist);
+                int drawStart, drawEnd;
 
-                drawStartEnd[x][0] = (-lineHeight + ResolutionHeight) / 2;
-                if (drawStartEnd[x][0] < 0) drawStartEnd[x][0] = 0;
-                drawStartEnd[x][1] = (lineHeight + ResolutionHeight) / 2;
-                if (drawStartEnd[x][1] >= ResolutionHeight) drawStartEnd[x][1] = ResolutionHeight - 1;
+                drawStart = (-lineHeight + ResolutionHeight) / 2;
+                if (drawStart < 0) drawStart = 0;
+                drawEnd = (lineHeight + ResolutionHeight) / 2;
+                if (drawEnd >= ResolutionHeight) drawEnd = ResolutionHeight - 1;
                 
                 int texNum = map[mapSquare.x][mapSquare.y] - 1;
 
@@ -238,15 +258,22 @@ public class RaycastingTesting{
                 }
 
                 double texStep = (double)TextureHeight / lineHeight;
-                double texPos = (drawStartEnd[x][0] - ResolutionHeight/2 + lineHeight/2) * texStep;
+                double texPos = (drawStart - ResolutionHeight/2 + lineHeight/2) * texStep;
 
-                for (int y = drawStartEnd[x][0]; y < drawStartEnd[x][1]; y++) {
+                for (int y = drawStart; y < drawEnd; y++) {
                     int texY = (int)texPos & (TextureHeight - 1);
                     texPos += texStep;
-                    int color = texture[texNum][TextureHeight * texY + texX];
+                    int color = texture[texNum][texX][texY];
                     if (side) color = (color >> 1) & darkerNumber;
                     screen.setRGB(x, y, color);
                 }
+
+                int skyX = (int)(dirAng * skyPixelsPerRevolution - x * skyStepX + SkyWidth) % SkyWidth;
+                for (int y = 0; y < drawStart; y++) {
+                    int color = skyPng.getRGB(skyX, y);
+                    screen.setRGB(x, y, color);
+                }
+
                 zBuffer[x] = perpWallDist;
             }
 
@@ -287,7 +314,7 @@ public class RaycastingTesting{
                 //loop through every vertical stripe of the sprite on screen
                 for(int stripe = drawStartX; stripe < drawEndX; stripe++)
                 {
-                    int texX = (int)(256 * (stripe - (-spriteWidth / 2 + spriteScreenX)) * TextureWidth / spriteWidth) / 256;
+                    int texX = (int)(256 * (long)(stripe - (-spriteWidth / 2 + spriteScreenX)) * TextureWidth / spriteWidth) / 256;
                     //the conditions in the if are:
                     //1) it's in front of camera plane so you don't see things behind you
                     //2) it's on the screen (left)
@@ -299,7 +326,7 @@ public class RaycastingTesting{
                             int texY = (int)((((long) d * TextureHeight) / spriteHeight) / 256);
                             int color;
                             //try {
-                            color = texture[sprite[spriteOrder[i]].texture][TextureWidth * texY + texX]; //get current color from the texture
+                            color = texture[sprite[spriteOrder[i]].texture][texX][texY]; //get current color from the texture
                             if((color & 0x00FFFFFF) != 0) screen.setRGB(stripe, y, color); //paint pixel if it isn't black, black is the invisible color
                             /*} catch (Exception e) {
                                 System.out.println(e.getMessage());
@@ -377,12 +404,12 @@ public class RaycastingTesting{
             if (cameraDir.x == 0){
                 deltaDist.x = Double.POSITIVE_INFINITY;
             } else {
-                deltaDist.x = Math.abs(Math.sqrt((cameraDir.x)*(cameraDir.x) + (cameraDir.y)*(cameraDir.y))/cameraDir.x);
+                deltaDist.x = Math.abs(cameraDir.getMagnitude()/cameraDir.x);
             }
             if (cameraDir.y == 0){
                 deltaDist.y = Double.POSITIVE_INFINITY;
             } else {
-                deltaDist.y = Math.abs(Math.sqrt((cameraDir.x)*(cameraDir.x) + (cameraDir.y)*(cameraDir.y))/cameraDir.y);;
+                deltaDist.y = Math.abs(Math.sqrt(cameraDir.getMagnitude())/cameraDir.y);;
             }
 
             if (cameraDir.x < 0) {
@@ -410,6 +437,7 @@ public class RaycastingTesting{
                     mapSquare.y += step.y;
                     side = false;
                 }
+                //System.out.println(mapSquare.x + ", " + mapSquare.y);
                 if (map[mapSquare.x][mapSquare.y] > 0) hit = 1;
             }
 

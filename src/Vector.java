@@ -19,4 +19,8 @@ public class Vector {
     public Vector scalMult(double a){
         return new Vector(x * a, y * a);
     }
+
+    public double getMagnitude() {
+        return Math.sqrt(x*x + y*y);
+    }
 }

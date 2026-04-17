@@ -7,6 +7,7 @@ import javax.imageio.ImageIO;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 
 import hsa2.GraphicsConsole;
 
@@ -21,24 +22,27 @@ public class RaycastingTesting{
     public static final int TextureHeight = 64;
     public static final int MapTextureWidth = 48;
     public static final int MapTextureHeight = 48;
+    public static final int SkyTextureWidth = 1000; //Theoretical Optimal is 3447 px wide lol
+    public static final int SkyTextureHeight = 480;
     public static final int NumTextures = 11;
 
-    public static int[][] drawStartEnd = new int[ResolutionWidth][2];
-    public static Color[] color = new Color[ResolutionWidth];
-    public static double yVelocity = 0;
-    public static int height = 0; 
-
+    //The graphics console
     public static GraphicsConsole gc = new GraphicsConsole(ScreenWidth, ScreenHeight);
 
+    //Textures
     BufferedImage texturePngs[] = new BufferedImage[NumTextures];
     BufferedImage skyPng, mapPng;
     int texture[][][] = new int[NumTextures][TextureWidth][TextureHeight];
-    int mapTexture[][] = new int[MapTextureWidth][MapTextureHeight];
-    int darkerNumber = Integer.parseInt("011111110111111101111111", 2);
-    BufferedImage screen;
+    int mapTexture[][];
+    int skyTexture[][];
+    int darkerNumber = Integer.parseInt("011111110111111101111111", 2); //bitmask to make colors darker for y-side walls and floor
 
+    //Screen
+    BufferedImage screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
+    int[] screenArr = ((DataBufferInt) screen.getRaster().getDataBuffer()).getData();
+
+    //Sprite Variables
     double[] zBuffer = new double[ResolutionWidth];
-
     public static final int NumSprites = 20;
     int[] spriteOrder = new int[NumSprites];
     double[] spriteDistance = new double[NumSprites];
@@ -74,6 +78,8 @@ public class RaycastingTesting{
     };
 
     RaycastingTesting () {
+
+        //Initilization of map and textures
         int mapWidth = 0, mapHeight = 1;
         int[][] map = {};
         File mapFile = new File("src/map.txt");
@@ -122,9 +128,16 @@ public class RaycastingTesting{
                     }
                 }
             }
+            mapTexture = new int[mapPng.getWidth()][mapPng.getHeight()];
             for (int y = 0; y < MapTextureHeight; y++) {
                 for (int x = 0; x < MapTextureWidth; x++) {
                     mapTexture[MapTextureWidth - x - 1][MapTextureHeight - y - 1] = mapPng.getRGB(x,y);
+                }
+            }
+            skyTexture = new int[skyPng.getWidth()][skyPng.getHeight()];
+            for (int y = 0; y < SkyTextureHeight; y++) {
+                for (int x = 0; x < SkyTextureWidth; x++) {
+                    skyTexture[x][y] = skyPng.getRGB(x, y);
                 }
             }
             
@@ -132,30 +145,29 @@ public class RaycastingTesting{
             System.out.println("Problem Reading File.");
         }
 
-        //Theoretical Optimal is 3447 px wide lol
-        final int SkyWidth = skyPng.getWidth();
-
+        //Player Variables
         Vector pos = new Vector(22, 12);
         Vector dir = new Vector(-1, 0);
         Vector cameraPos = pos;
         Vector plane = new Vector(0,0.66);
 
+        //Time Variables
         double time = 0, oldTime = 0, startTime = System.currentTimeMillis(), numSeconds = 0, numFrames = 0;
-        final double rotConst = 3.0;
         
-        double skyPixelsPerRevolution = SkyWidth / (2 * Math.PI);
+        //Sky Render Variables
+        double skyPixelsPerRevolution = SkyTextureWidth / (2 * Math.PI);
         double angBetwRays = Math.atan2(plane.y, -dir.x) * 2 / ScreenWidth;
-        double skyStepX = SkyWidth/(2*Math.PI/angBetwRays);
+        double skyStepX = SkyTextureWidth/(2*Math.PI/angBetwRays);
         
+        //Game Loop
         while (true) {
 
+            //Render Floor
             double dirAng = Math.atan2(dir.y, dir.x);
-
-            screen = new BufferedImage(ResolutionWidth, ResolutionHeight, BufferedImage.TYPE_INT_RGB);
+            Vector rayDir0 = new Vector(dir.x - plane.x, dir.y - plane.y);
+            Vector rayDir1 = new Vector(dir.x + plane.x, dir.y + plane.y);
 
             for (int y = ResolutionHeight/2; y < ResolutionHeight; y++) {
-                Vector rayDir0 = new Vector(dir.x - plane.x, dir.y - plane.y);
-                Vector rayDir1 = new Vector(dir.x + plane.x, dir.y + plane.y);
 
                 int p = y - ResolutionHeight / 2;
                 double posZ = 0.5 * ResolutionHeight;
@@ -174,14 +186,17 @@ public class RaycastingTesting{
                     int color;
                     color = mapTexture[fcTexture.x][fcTexture.y];
                     color = (color >> 1) & darkerNumber;
-                    screen.setRGB(x, y, color);
+                    screenArr[y * ResolutionWidth + x] = color;
                 }
             }
 
+            //Render Walls and Sky
             for (int x = 0; x < ResolutionWidth; x++){
+                //Calculate ray position and direction
                 double cameraX = 2 * x / (double) ResolutionWidth - 1;
                 Vector rayDir = dir.addVec(plane.scalMult(cameraX));
 
+                //Variable initialization for DDA
                 VectorInt mapSquare = new VectorInt((int)cameraPos.x, (int)cameraPos.y);
                 Vector sideDist = new Vector();
                 Vector deltaDist = new Vector();
@@ -190,6 +205,7 @@ public class RaycastingTesting{
                 int hit = 0;
                 boolean side = false; //NS = true, EW = false;
 
+                //Calculate step and initial sideDist
                 if (rayDir.x == 0){
                     deltaDist.x = Double.POSITIVE_INFINITY;
                 } else {
@@ -216,6 +232,7 @@ public class RaycastingTesting{
                     sideDist.y = (mapSquare.y + 1.0 - cameraPos.y) * deltaDist.y;
                 }
 
+                //Perform DDA
                 while (hit == 0){
                     if (sideDist.x < sideDist.y) {
                         sideDist.x += deltaDist.x;
@@ -234,6 +251,7 @@ public class RaycastingTesting{
                 //if (!side) perpWallDist = sideDist.x;
                 //else perpWallDist = sideDist.y;
 
+                //Calculate line's parameters to draw on screen
                 int lineHeight = (int)(ResolutionHeight / perpWallDist);
                 int drawStart, drawEnd;
 
@@ -242,6 +260,7 @@ public class RaycastingTesting{
                 drawEnd = (lineHeight + ResolutionHeight) / 2;
                 if (drawEnd >= ResolutionHeight) drawEnd = ResolutionHeight - 1;
                 
+                //Wall Texture Calculations
                 int texNum = map[mapSquare.x][mapSquare.y] - 1;
 
                 double wallX;
@@ -260,23 +279,30 @@ public class RaycastingTesting{
                 double texStep = (double)TextureHeight / lineHeight;
                 double texPos = (drawStart - ResolutionHeight/2 + lineHeight/2) * texStep;
 
+                //Render Wall
                 for (int y = drawStart; y < drawEnd; y++) {
                     int texY = (int)texPos & (TextureHeight - 1);
                     texPos += texStep;
                     int color = texture[texNum][texX][texY];
                     if (side) color = (color >> 1) & darkerNumber;
-                    screen.setRGB(x, y, color);
+                    screenArr[y * ResolutionWidth + x] = color;
                 }
 
-                int skyX = (int)(dirAng * skyPixelsPerRevolution - x * skyStepX + SkyWidth) % SkyWidth;
+                //Render Sky
+                int skyX = (int)(dirAng * skyPixelsPerRevolution - x * skyStepX);
+                if (skyX < 0) skyX += SkyTextureWidth;
+                else if (skyX >= SkyTextureWidth) skyX -= SkyTextureWidth;
+
                 for (int y = 0; y < drawStart; y++) {
-                    int color = skyPng.getRGB(skyX, y);
-                    screen.setRGB(x, y, color);
+                    int color = skyTexture[skyX][y];
+                    screenArr[y * ResolutionWidth + x] = color;
                 }
 
+                //Set ZBuffer for sprite rendering
                 zBuffer[x] = perpWallDist;
             }
 
+            //Sprite Rendering
             sprite[19].setXY(pos);
 
             for (int i = 0; i < NumSprites; i++){
@@ -327,22 +353,20 @@ public class RaycastingTesting{
                             int color;
                             //try {
                             color = texture[sprite[spriteOrder[i]].texture][texX][texY]; //get current color from the texture
-                            if((color & 0x00FFFFFF) != 0) screen.setRGB(stripe, y, color); //paint pixel if it isn't black, black is the invisible color
-                            /*} catch (Exception e) {
-                                System.out.println(e.getMessage());
-                                System.out.printf("%d, %f, %d, %d\n", d, transform.y, drawStartY, spriteHeight);
-                            }*/
+                            if((color & 0x00FFFFFF) != 0) screenArr[y * ResolutionWidth + stripe] = color; //paint pixel if it isn't black, black is the invisible color
                             
                         }
                     }
                 }
             }
 
+            //Timing
             oldTime = time;
             time = System.currentTimeMillis();
             double frameTime = (time - oldTime)/1000;
             numFrames++;
 
+            //Print framerate in console every second
             if ((time - startTime)/1000 > numSeconds){
                 System.out.println(numFrames);
                 numFrames = 0;
@@ -351,8 +375,9 @@ public class RaycastingTesting{
 
             drawGraphics();
 
+            //Movement
             double moveSpeed = frameTime * 5.0; //the constant value is in squares/second
-            double rotSpeed = frameTime * rotConst; //the constant value is in radians/second
+            double rotSpeed = frameTime * 3.0; //the constant value is in radians/second
             //move forward if no wall in front of you
             if(gc.isKeyDown(87)) {
                 if(map[(int)(pos.x + dir.x * moveSpeed)][(int)pos.y] == 0) pos.x += dir.x * moveSpeed;
@@ -384,6 +409,7 @@ public class RaycastingTesting{
                 plane.y = oldplaneX * Math.sin(rotSpeed) + plane.y * Math.cos(rotSpeed);
             }
 
+            //Haha funny plane skewing (makes for very funny visual effects)
             if(gc.isKeyDown(81)){
                 plane.y += 0.01;
             }
@@ -391,6 +417,7 @@ public class RaycastingTesting{
                 plane.y -= 0.01;
             }
 
+            //Camera Collision Detection (prevents camera from going through walls when close to them)
             Vector cameraDir = dir.scalMult(-1);
 
             VectorInt mapSquare = new VectorInt((int)pos.x, (int)pos.y);
@@ -400,16 +427,17 @@ public class RaycastingTesting{
             int hit = 0;
             double perpWallDist, cameraMult;
             boolean side = false;
+            double cameraMag = cameraDir.getMagnitude();
 
             if (cameraDir.x == 0){
                 deltaDist.x = Double.POSITIVE_INFINITY;
             } else {
-                deltaDist.x = Math.abs(cameraDir.getMagnitude()/cameraDir.x);
+                deltaDist.x = Math.abs(cameraMag/cameraDir.x);
             }
             if (cameraDir.y == 0){
                 deltaDist.y = Double.POSITIVE_INFINITY;
             } else {
-                deltaDist.y = Math.abs(Math.sqrt(cameraDir.getMagnitude())/cameraDir.y);;
+                deltaDist.y = Math.abs(cameraMag/cameraDir.y);
             }
 
             if (cameraDir.x < 0) {

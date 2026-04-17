@@ -31,6 +31,19 @@ public class Sprite {
             order[amount - 1 - i] = sprites[i].x;
             dist[amount - 1 - i] = sprites[i].y;
         }
+
+        // HashMap<Double, Integer> sprites = new HashMap<Double, Integer>();
+        // Double[] distObj = new Double[amount];
+        // for (int i = 0; i < amount; i++){
+        //     sprites.put(dist[i], order[i]);
+        //     distObj[i] = dist[i];
+        // }
+        // Arrays.sort(distObj);
+        
+        // for (int i = 0; i < amount; i++){
+        //     order[amount - 1 - i] = sprites.get(distObj[i]);
+        //     dist[amount - 1 - i] = distObj[i];
+        // }
     }
 }
 
@@ -44,7 +57,7 @@ class IDPair {
     }
 }
 
-class SortByDist implements Comparator<IDPair>{
+class SortByDist implements Comparator<IDPair> {
     public int compare(IDPair p1, IDPair p2){
         if (p1.y > p2.y) {
             return 1;
